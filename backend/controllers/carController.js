@@ -1,13 +1,14 @@
 const asyncHandler = require('express-async-handler')
-const { globalAgent } = require('http')
 
 const Car = require('../models/carModel')
+const User = require('../models/carModel')
+
 
 //@desc     Get cars
 //@route    GET /api/cars
 //@access   Private
 const getCars = asyncHandler(async (req, res) => {
-    const cars = await Car.find()
+    const cars = await Car.find({ user: req.user.id})
     res.status(200).json(cars)
 })
 
@@ -21,7 +22,8 @@ const uploadCar = asyncHandler(async (req, res) => {
     }
 
     const car = await Car.create({
-        Name: req.body.text
+        carName: req.body.text,
+        user: req.user.id
     })
     res.status(200).json(car)
 })
@@ -34,6 +36,16 @@ const updateCar = asyncHandler(async (req, res) => {
     if(!car){
         res.status(400)
         throw new Error('Car not found')
+    }
+
+    if(!req.user) {
+        res.status(401)
+        throw new Error('User not found')
+    }
+
+    if(car.user.toString() !== req.user.id){
+        res.status(401)
+        throw new Error('User not authorized')
     }
 
     const updatedCar = await Car.findByIdAndUpdate(req.params.id, req.body,{
@@ -50,6 +62,16 @@ const deleteCar = asyncHandler(async (req, res) => {
     if(!car){
         res.status(400)
         throw new Error('Car not found')
+    }
+
+    if(!req.user) {
+        res.status(401)
+        throw new Error('User not found')
+    }
+
+    if(car.user.toString() !== req.user.id){
+        res.status(401)
+        throw new Error('User not authorized')
     }
     await car.remove()
 
